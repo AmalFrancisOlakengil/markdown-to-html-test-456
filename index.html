@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown to HTML Converter</title>
+
+    <!-- Bootstrap CSS CDN for modern, clean design and responsiveness -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    
+    <!-- Highlight.js CSS Theme CDN for syntax highlighting -->
+    <!-- Using Atom One Dark theme for code blocks -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+
+    <!-- Custom CSS for overall page styling and minor adjustments -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        .container-main {
+            max-width: 960px;
+            margin-top: 30px;
+            margin-bottom: 30px;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        /* Style adjustments for Markdown elements to ensure consistency with Bootstrap and readability */
+        h1, h2, h3, h4, h5, h6 {
+            color: #212529;
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+        }
+        p {
+            margin-bottom: 1em;
+        }
+        ul, ol {
+            margin-bottom: 1em;
+            padding-left: 2em; /* Ensure proper indentation for lists */
+        }
+        /* Specific styling for code blocks (preformatted text) */
+        pre {
+            background-color: #282c34; /* Matching atom-one-dark theme background */
+            color: #abb2bf; /* Matching atom-one-dark theme text color */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto; /* Enable horizontal scrolling for long code lines */
+            margin-bottom: 1em;
+        }
+        code {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.875em; /* Slightly smaller font size for inline code */
+            /* Inline code might need a background/padding too, if not handled by Bootstrap or highlight.js */
+            background-color: rgba(110,118,129,0.4); /* Light background for inline code */
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+        }
+        /* Remove default 'Loading content...' text after successful render */
+        #markdown-output.loaded p.text-muted {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container container-main">
+        <header class="mb-4 text-center">
+            <h1 class="display-5 text-primary">Markdown Content Viewer</h1>
+            <p class="lead text-muted">Converting your Markdown to beautifully formatted HTML.</p>
+        </header>
+
+        <main>
+            <!-- Error message display area -->
+            <div id="error-message" class="mb-4">
+                <!-- JavaScript will populate this if an error occurs -->
+            </div>
+
+            <!-- Markdown content rendering area -->
+            <section id="markdown-output" class="markdown-body">
+                <p class="text-muted text-center py-5">Loading and rendering content...</p>
+                <!-- The rendered HTML from Markdown will be inserted here by JavaScript -->
+            </section>
+        </main>
+
+        <footer class="mt-5 pt-4 border-top text-center text-muted">
+            <p>&copy; 2023 Markdown Converter. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <!-- Marked.js for Markdown to HTML conversion -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for syntax highlighting of code blocks -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Include specific language files for Highlight.js for better accuracy. Python is used in the example. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    
+    <!-- Bootstrap JS bundle (not strictly necessary for this display-only page but good for future component use) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <!-- Custom JavaScript for Markdown processing and display -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // The Markdown content from input.md
+            const markdownContent = `
+# Welcome to My Page
+
+This is a **bold** statement and this is *italic*.
+
+## Features
+- Item 1
+- Item 2
+- Item 3
+
+### Code Example
+\`\`\`python
+print("Hello World")
+\`\`\`
+            `;
+
+            const outputDiv = document.getElementById('markdown-output');
+            const errorDiv = document.getElementById('error-message');
+
+            try {
+                // Configure marked.js to use highlight.js for syntax highlighting
+                marked.setOptions({
+                    // Add 'language-' prefix to the code block class for highlight.js CSS
+                    langPrefix: 'language-', 
+                    // Custom highlight function that uses highlight.js
+                    highlight: function(code, lang) {
+                        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                        try {
+                            // hljs.highlight returns an object, we need its 'value' (the HTML string)
+                            return hljs.highlight(code, { language }).value;
+                        } catch (e) {
+                            console.warn("Highlight.js failed to highlight language '" + lang + "'. Falling back to raw code.", e);
+                            return code; // Fallback to raw code if highlighting fails
+                        }
+                    },
+                    gfm: true,        // Enable GitHub Flavored Markdown
+                    breaks: true,     // Enable GFM line breaks
+                    pedantic: false,  // Don't conform to the original markdown spec
+                    sanitize: false,  // For static input.md, this is safe. For user input, consider DOMPurify for XSS protection.
+                    smartLists: true, // Use smarter list behavior than the original markdown spec
+                    smartypants: false // Don't use "smart" typographic punctuation for quotes and dashes
+                });
+
+                // Parse the Markdown content to HTML
+                const htmlOutput = marked.parse(markdownContent);
+                outputDiv.innerHTML = htmlOutput;
+                outputDiv.classList.add('loaded'); // Add a class to hide the "Loading..." message
+
+            } catch (e) {
+                // Basic error handling for parsing/rendering issues
+                console.error("Failed to parse or render Markdown:", e);
+                errorDiv.innerHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        <h4>Oops! An Error Occurred</h4>
+                        <p>We couldn't display the Markdown content as expected.</p>
+                        <p class="mb-0"><small>Error details: <code>${e.message}</code></small></p>
+                        <p class="mb-0"><small>Please check the browser's developer console for more technical information.</small></p>
+                    </div>`;
+                outputDiv.innerHTML = ''; // Clear any partial or "Loading..." content
+            }
+        });
+    </script>
+</body>
+</html>
